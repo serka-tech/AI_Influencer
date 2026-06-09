@@ -86,11 +86,15 @@ class ProductionPipeline:
         for video_attempt in range(1, 4):
             log.info(f"Sahne {index}: video üretimi başlıyor (Deneme {video_attempt})")
             try:
+                # Retry'larda prompt'u hafifçe değiştirerek önbellek/filtre takılmasını aşmayı dene
+                current_prompt = i2v if video_attempt == 1 else f"{i2v} [v{video_attempt}]"
+                
                 video_task_id = await asyncio.to_thread(
                     self.kie.create_veo_video,
-                    prompt=i2v,
+                    prompt=current_prompt,
                     image_url=image_url,
                     aspect_ratio=self.aspect_ratio,
+                    enable_fallback=True  # Hata verirse Kling/Luma gibi yedek modellere geç
                 )
                 video_result = await self.kie.async_poll_veo_task(video_task_id)
                 if video_result.get("status") == "success" and video_result.get("urls"):
