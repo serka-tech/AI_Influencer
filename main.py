@@ -621,7 +621,8 @@ async def _run_production(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         scene_count = context.user_data.get("scenes", len(scenario.get("scenes", [])))
         actual_cost = estimate_cost(scene_count)
         try:
-            await asyncio.to_thread(log_cost, "AI_Influencer", actual_cost, f"{scene_count} sahne video üretimi")
+            cost_float = float(actual_cost.get("max", 0.0))
+            await asyncio.to_thread(log_cost, "AI_Influencer", cost_float, f"{scene_count} sahne video üretimi")
         except Exception:
             log.warning("Maliyet loglanamadı", exc_info=True)
 
