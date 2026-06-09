@@ -208,27 +208,9 @@ async def _ask_input(message, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def on_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Ham giriş — konu çözümü üretim aşamasında yapılır (LLM/fetch zaman alabilir)
     context.user_data["raw_input"] = update.message.text.strip()
-    buttons = [
-        InlineKeyboardButton("Türkçe", callback_data="lang:Türkçe"),
-        InlineKeyboardButton("English", callback_data="lang:English"),
-    ]
-    await update.message.reply_text(
-        "🗣️ Konuşma dili? (ya da başka bir dil yaz)",
-        reply_markup=InlineKeyboardMarkup([buttons]),
-    )
-    return ASK_LANGUAGE
-
-
-async def on_language_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    context.user_data["language"] = query.data.split(":", 1)[1]
-    await query.edit_message_text(f"🗣️ Dil: {context.user_data['language']}")
-    return await _ask_scenes(query.message, context)
-
-
-async def on_language_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data["language"] = update.message.text.strip()
+    context.user_data["language"] = "Türkçe"
+    
+    # Doğrudan sahne seçimine geç
     return await _ask_scenes(update.message, context)
 
 
@@ -797,10 +779,6 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, on_venue_video),
             ],
             ASK_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, on_input)],
-            ASK_LANGUAGE: [
-                CallbackQueryHandler(on_language_button, pattern=r"^lang:"),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, on_language_text),
-            ],
             ASK_SCENES: [CallbackQueryHandler(on_scenes, pattern=r"^scenes:")],
             SCENARIO_REVIEW: [CallbackQueryHandler(on_scenario_decision, pattern=r"^scenario:")],
             SCENARIO_EDIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, on_scenario_edit)],

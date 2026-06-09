@@ -92,7 +92,7 @@ class ProductionPipeline:
                 elif video_attempt == 2:
                     current_prompt = f"{i2v} [v2]"
                 else:
-                    current_prompt = "A young person looking directly at the camera and talking calmly. Cinematic lighting, photorealistic. Safe and clear content."
+                    current_prompt = f"{i2v}. The character is speaking STRICTLY in Turkish language. Photorealistic, cinematic lighting."
                 
                 video_task_id = await asyncio.to_thread(
                     self.kie.create_veo_video,
