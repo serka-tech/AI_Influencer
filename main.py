@@ -233,11 +233,19 @@ async def on_language_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def _ask_scenes(message, context: ContextTypes.DEFAULT_TYPE) -> int:
+    word_count = len(context.user_data.get("raw_input", "").split())
+    # Ortalama 15 kelime = ~8 saniye (normal konuşma hızı)
+    est_scenes = max(settings.MIN_SCENES, min(settings.MAX_SCENES, (word_count // 15) + 1))
+
     buttons = [
         InlineKeyboardButton(f"{n} (~{n * SECONDS_PER_SCENE} sn)", callback_data=f"scenes:{n}")
         for n in range(settings.MIN_SCENES, settings.MAX_SCENES + 1)
     ]
     rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    
+    # Otomatik butonunu en üste ekle
+    rows.insert(0, [InlineKeyboardButton(f"🤖 Metne Göre Otomatik (~{est_scenes} sahne)", callback_data="scenes:auto")])
+    
     await message.reply_text(
         f"🎞️ Kaç sahne olsun?\n(Her sahne ~{SECONDS_PER_SCENE} sn; toplam uzunluk buna göre)",
         reply_markup=InlineKeyboardMarkup(rows),
@@ -248,7 +256,14 @@ async def _ask_scenes(message, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def on_scenes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    scene_count = int(query.data.split(":")[1])
+    
+    data = query.data.split(":")[1]
+    if data == "auto":
+        word_count = len(context.user_data.get("raw_input", "").split())
+        scene_count = max(settings.MIN_SCENES, min(settings.MAX_SCENES, (word_count // 15) + 1))
+    else:
+        scene_count = int(data)
+        
     context.user_data["scenes"] = scene_count
     await query.edit_message_text(f"🎞️ {scene_count} sahne seçildi.")
 
