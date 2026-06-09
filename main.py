@@ -785,7 +785,11 @@ def main() -> None:
     conv = ConversationHandler(
         name="ai_influencer_conv",
         persistent=True,
-        entry_points=[CommandHandler("baslat", cmd_start), CommandHandler("start", cmd_start)],
+        allow_reentry=True,
+        entry_points=[
+            CommandHandler("baslat", cmd_start),
+            CommandHandler("start", cmd_start)
+        ],
         states={
             ASK_MODE: [CallbackQueryHandler(on_mode, pattern=r"^mode:")],
             ASK_VENUE_VIDEO: [
