@@ -83,25 +83,43 @@ class ProductionPipeline:
             await progress(f"🖼️ Sahne {index} görseli hazır")
 
         # 2) Video — Veo 3.1 (image-to-video, native ses)
-        log.info(f"Sahne {index}: video üretimi başlıyor")
-        video_task_id = await asyncio.to_thread(
-            self.kie.create_veo_video,
-            prompt=i2v,
-            image_url=image_url,
-            aspect_ratio=self.aspect_ratio,
-        )
-        video_result = await self.kie.async_poll_veo_task(video_task_id)
-        if video_result.get("status") != "success" or not video_result.get("urls"):
-            raise PipelineError(
-                f"Sahne {index} video üretimi başarısız: {video_result.get('error', '?')}",
-                stage="video",
-                code=video_result.get("code"),
-            )
-        video_url = video_result["urls"][0]
-        log.info(f"Sahne {index}: video hazır → {video_url[:70]}")
-        if progress:
-            await progress(f"🎬 Sahne {index} videosu hazır")
-        return video_url
+        for video_attempt in range(1, 4):
+            log.info(f"Sahne {index}: video üretimi başlıyor (Deneme {video_attempt})")
+            try:
+                video_task_id = await asyncio.to_thread(
+                    self.kie.create_veo_video,
+                    prompt=i2v,
+                    image_url=image_url,
+                    aspect_ratio=self.aspect_ratio,
+                )
+                video_result = await self.kie.async_poll_veo_task(video_task_id)
+                if video_result.get("status") == "success" and video_result.get("urls"):
+                    video_url = video_result["urls"][0]
+                    log.info(f"Sahne {index}: video hazır → {video_url[:70]}")
+                    if progress:
+                        await progress(f"🎬 Sahne {index} videosu hazır")
+                    return video_url
+                else:
+                    err_msg = video_result.get('error', '?')
+                    err_code = video_result.get('code')
+                    log.warning(f"Sahne {index} video üretimi başarısız (Deneme {video_attempt}): {err_msg}")
+                    if video_attempt == 3:
+                        raise PipelineError(
+                            f"Sahne {index} video üretimi 3 denemede de başarısız: {err_msg}",
+                            stage="video",
+                            code=err_code,
+                        )
+            except PipelineError:
+                raise
+            except Exception as e:
+                log.warning(f"Sahne {index} video üretimi sırasında exception (Deneme {video_attempt}): {e}")
+                if video_attempt == 3:
+                    raise PipelineError(f"Sahne {index} video üretimi başarısız: {e}", stage="video")
+            
+            # Yeniden denemeden önce biraz bekle
+            if progress:
+                await progress(f"⚠️ Sahne {index} video üretimi takıldı, tekrar deneniyor ({video_attempt}/3)...")
+            await asyncio.sleep(5)
 
     async def run(self, scenario: dict, progress=None) -> str:
         """
