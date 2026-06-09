@@ -1,0 +1,30 @@
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+master.env
+*.key
+*.pem
+
+# Karakter konsepti kişisel olabilir — paylaşmadan önce kontrol et
+prompts/karakter_konsept.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Geçici medya (test çıktıları vb.)
+*.mp4
+*.mp3
+
+# State files
+*.pickle

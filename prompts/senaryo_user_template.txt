@@ -1,0 +1,202 @@
+====Senin görevin, aşağıdaki girdilere bağlı kalarak ÇOK SAHNELİ kısa bir sosyal medya videosu için tam olarak şunu üretmek:
+
+- "scenes" adında bir dizi içinde, TOPLAM SAHNE SAYISI (sahne_sayisi) kadar sahne objesi.
+- Her sahne objesinde:
+  - O sahnenin ilk karesini üretecek bir text-to-image prompt (text_to_image_prompt),
+  - Aynı sahnenin bu ilk kareden başlayarak yaklaşık 8 saniyelik sekansı tanımlayan bir image-to-video prompt (image_to_video_prompt).
+- Tüm videonun altına yazılacak caption (video_caption).
+
+Girdiler:
+
+- Genel karakter / kanal bilgisi (character_details):
+__CHARACTER_DETAILS__
+
+- Bu videonun spesifik konusu (video topic):
+__VIDEO_TOPIC__
+
+- Toplam sahne sayısı (sahne_sayisi):
+__SCENE_COUNT__
+
+- Videonun konuşma dili (speech_language):
+__SPEECH_LANGUAGE__
+
+KRİTİK GENEL KURALLAR:
+
+- Bu bir selfie tarzı kısa video serisi (Reels / TikTok / Shorts).
+- Karakter, gerçekçi bir influencer; telefonu ön kamerasıyla, dikey 9:16 formatında UGC video çeker gibi kayıt alıyor.
+- Bakış açısı HER ZAMAN telefonun ön kamerasının GÖRÜŞÜ. İzleyici, sanki kamera / ekranın kendisiymiş gibi karakteri karşıdan görür.
+- KADRANDA ASLA TELEFON, SELFIE ÇUBUĞU, KAMERA GÖVDESİ VEYA AYNADAN YANSIMA GÖRÜNMEZ. Karakterin telefonu tuttuğu elleri de kadrajda belirgin şekilde görünmemelidir.
+- Prompt metinlerinde mümkün olduğunca "selfie" kelimesini kullanma; bunun yerine “front camera point-of-view portrait framing” gibi ifadelerle açıyı tarif et.
+- Karakteri dışarıdan gösteren ikinci bir kamera açısı ASLA kullanılmamalı; tüm sahne tek bir ön kamera POV’tur.
+- Her sahne, tek bir uzun çekim (long take) gibi olmalı; sahne İÇİNDE kesme, montaj, zaman/yer atlaması YOK.
+- Sahneler ARASINDA kurgu yapılabilir; yani sahne 1 biter, sahne 2 başlar; yeni bir açı veya ortam olabilir, ama HİKÂYE TUTARLI ilerlemeli.
+- Tüm sahnelerde:
+  - text_to_image_prompt ve image_to_video_prompt değerleri TAMAMEN İngilizce olmalıdır.
+  - video_caption, konuşma dilinde (speech_language) olmalıdır.
+
+JSON FORMAT KURALLARI:
+
+- JSON ÇIKTISI tam olarak şu yapıda olmalı:
+
+  {
+    "scenes": [
+      {
+        "text_to_image_prompt": "...",
+        "image_to_video_prompt": "..."
+      },
+      {
+        "text_to_image_prompt": "...",
+        "image_to_video_prompt": "..."
+      }
+    ],
+    "video_caption": "..."
+  }
+
+- "scenes" dizisindeki sahne sayısı, sahne_sayisi ile TAM OLARAK aynı olmalı.
+- JSON içinde başka hiçbir key kullanma; SADECE "scenes" ve "video_caption" olmalı.
+- JSON dışına hiçbir açıklama yazma; backtick veya kod bloğu kullanma.
+- JSON içindeki string değerlerin içinde kesinlikle çift tırnak (") veya backtick (`) kullanma. Karakterin söylediği BİREBİR cümleyi, tırnak kullanmadan, düz kelimeler olarak yaz (bkz. SES VE KONUŞMA kuralları).
+
+GÜVENLİK VE POLICY KURALLARI:
+
+- Karakter HER ZAMAN tamamen giyinik olmalı.
+- Kıyafetler sıcak hava veya spor için HAFİF ve VÜCUDA OTURAN olabilir (örneğin spor üst, tayt, biker şort); omuzlar, kollar, bacaklar ve göbek kısmı açık olabilir ama doğal ve işlevsel anlat.
+- Kıyafetler ve sahneler, hayatta kalma, sıcakla mücadele, doğayla başa çıkma gibi temalar üzerinden anlatılmalı; CİNSEL bir vurgu yapılmamalı.
+- Çıplaklık, üstünü çıkarma, iç çamaşırı, transparan / içini gösteren kumaşlar, göğüs ucu belli olan ince kıyafetler, aşırı dekolte veya vücudun belirli bölgelerini erotik biçimde gösteren kıyafet TARİF ETME.
+- "nude, naked, topless, shirtless, stripped, took off her clothes, lingerie, bikini, seductive, erotic, sexy, provocative" gibi kelimeler veya bu anlama gelen ifadeler KULLANMA.
+- Özellikle su ve ter sahnelerinde, kıyafeti “clinging, clings to her body, tight wet fabric, outlines her curves” gibi vücuda yapışan, kıvrımları belli eden şekilde TANIMLAMA. Bu kelimeleri kullanma.
+- Kıyafet ıslansa bile kumaş HER ZAMAN kalın ve opak kalmalı; göğüs, kalça veya genital bölgenin şekli veya detayı belli oluyormuş gibi bir anlatım yapma.
+- Su veya ıslaklık tarif ederken, belirgin ıslaklığı mümkün olduğunca şort, bacak, kol ve bel kısmına kaydır; üst kıyafetin göğüs hizasında büyük koyu ıslak lekeler, “ıslak tişört” efekti varmış gibi bir görüntü tarif etme.
+- Üst kısım için en fazla, omuz ve yaka çevresinde hafif su damlaları veya çok hafif nem olabilir; renk değişimi veya kumaşın vücuda yapıştığını ima etme.
+- Kamerayı cinsel anlamda beden bölgelerine odaklama; su, terleme, serinleme gibi unsurlar sadece hayatta kalma, rahatlama, umut ve sevinç üzerinden anlatılmalı, erotik değil.
+- Aşırı şiddet, kan, kendine zarar verme veya tehlikeli davranış talimatları verme.
+
+SAHNE TASARIMI VE 8 SANİYE KURALI:
+
+- Her sahne, yaklaşık 8 saniyelik tek bir ön kamera çekimi olmalı.
+- Her sahnede:
+  - text_to_image_prompt sadece TEK BİR ANLIK KAREYİ tanımlar (donmuş fotoğraf gibi).
+  - image_to_video_prompt, bu kareden başlayıp 8 saniye boyunca neler olduğunu (hafif kamera hareketleri, jestler, mimik değişimi, küçük adım hareketleri gibi) anlatır.
+- Olay akışı 8 saniyeye sığacak kadar kısa olmalı; çok uzun, karmaşık diyalog veya aksiyon dizileri verme.
+
+HİKÂYE TUTARLILIĞI VE SAHNE AKIŞI:
+
+- Tüm sahneler aynı karaktere (character_details) ve aynı video konusuna (video topic) hizmet eder.
+- Sahne 1 giriş / durumu kurma; sahne 2–(n-1) gelişme; son sahne ise kapanış / sonuç / call-to-action gibi düşünülebilir.
+- Sahne 1’in image_to_video_prompt’unda olan şeyler, sahne 2’nin text_to_image_prompt’unda mantıklı bir devam hissi vermeli (örneğin ortam, duygu, konu).
+- Aynı şekilde sahne 2 → sahne 3 → ... → sahne_n geçişlerinde de ortam, kıyafet, ruh hali ve ana tema tutarlı; her sahne, bir öncekinin doğal uzantısı gibi hissettirmeli.
+- Karakter tüm sahnelerde aynı kişi; isim, yaş, kişilik ve genel görünüm sabit olmalı. Kıyafet veya ortam değişse bile, sebebi hikâyenin akışından anlaşılabilir olmalı.
+
+TEXT_TO_IMAGE_PROMPT İÇİN KURALLAR (HER SAHNE):
+
+- Her text_to_image_prompt:
+  - İngilizce tek bir paragraf olmalı.
+  - HER ZAMAN şu kimlik sabitleme cümlesiyle başlamalı (tırnaksız):
+
+    Use the provided reference image ONLY as the identity reference for the main character. The person must stay exactly the same person: same face, age, skin tone and hair color. Do NOT change them into a different person. The clothing and outfit are NOT taken from the reference image; the outfit is defined entirely by this prompt and may look completely different from the clothing shown in the reference image.
+
+  - Bu cümlenin HEMEN ARDINDAN kamera ve kadrajı tanımla. Şu tarz bir ifade kullan:
+    - handheld front-facing smartphone camera point-of-view, vertical 9:16, close-up or medium portrait framing from the front camera, with slight natural hand shake
+  - Açıkça belirt:
+    - the phone, any camera device, selfie stick, mirror or her hands holding a device are NOT visible in the frame; we only see what the front camera sees.
+  - “selfie framing” gibi ifadeler yazma; framing’i portre kadrajı olarak tarif et.
+  - UGC stili önemli: sahne, profesyonel film kamerası gibi değil, gerçek bir telefonla çekilmiş doğal bir ön kamera videosunun durdurulmuş karesi gibi görünmeli:
+    - looks like a realistic unedited smartphone UGC front-camera video frame, natural lighting, no cinematic lighting, no heavy depth of field, no dramatic color grading.
+  - O anda karakterin ne yaptığı (jest, poz, mimik), bulunduğu ortamın kısa tarifi, arka plan unsurları, ışık (günün saati, ışık kaynağı) ve duygu tonunu tarif et.
+  - Zaman akışını anlatma; SADECE TEK ANLIK KARE.
+
+  - GÜNÜN SAATİ KONUYLA EŞLEŞMELİ (ÖNEMLİ):
+    - Video konusu belirli bir günün saatini veya gökyüzü atmosferini ima ediyorsa (örneğin gün batımı, gün doğumu, altın saat, mavi saat, gece vb.), HER sahnenin text_to_image_prompt'u bu saati AÇIKÇA ve net biçimde göstermeli; gökyüzü ve ışık buna göre tarif edilmeli (örn. gün batımı için: ufka yakın alçak güneş, sıcak altın-turuncu gökyüzü, yüze ve ortama vuran sıcak uzun ışık, gökyüzünde yumuşak pembe ve mor tonlar).
+    - Konu farklı bir saat istiyorsa düz gündüz / öğle güneşine KAÇMA. İstenen atmosfer sahnede gerçekten görünmeli, sadece ima edilmemeli.
+    - Bir sahneye ayrı bir mekan/landmark referans görseli verildiğinde, o referansı SADECE yerin kimliği (şekli, landmark'ı, yerleşimi) olarak kullan. O referans fotoğrafın günün saatini, havasını veya ışığını KOPYALAMA. Promptta açıkça belirt ki ışık ve gökyüzü, konunun gerektirdiği saate göre yeniden işlenmeli (örn: referanstaki aynı landmark/yeri koru, ama sahne gün batımında olmalı, referans fotoğrafın gündüz ışığında DEĞİL).
+
+- Kıyafet seçimi ve tutarlılığı (ÖNEMLİ — HER VİDEODA TAZE KIYAFET):
+
+  - Referans görseldeki kıyafeti KOPYALAMA. Referans görsel SADECE kişinin kimliği içindir (yüz, yaş, ten, saç). Kıyafet, bu videoya özel olarak SENİN yaratıcı kararındır.
+  - Sahne 1'i yazmadan ÖNCE, bu videonun tamamı için TEK ve EKSİKSİZ bir kıyafet belirle. Bu kıyafet:
+    - bu videoya özel, taze ve belirgin olmalı (her seferinde aynı genel/varsayılan kıyafete — örn. düz beyaz üst — düşme; videodan videoya kıyafeti değiştir),
+    - videonun konusuna, mekânına, aktivitesine, hava durumuna ve ruh haline AÇIKÇA uymalı (örnek: çölde hayatta kalma -> hafif, nefes alan toprak tonlu trekking kıyafeti; ev içi rahat vlog -> rahat loungewear; sahil/koy turu -> yazlık kombin; kışın şehir sokak vlogu -> katmanlı, sıcak tutan sokak stili),
+    - yukarıdaki tüm GÜVENLİK VE POLICY kurallarına uymalı,
+    - SOMUT tarif edilmeli: her parçanın adı, rengi ve kumaşı/materyali (örn: zeytin yeşili fitilli pamuk atlet, yüksek belli bej kargo şort, beyaz keten spor ayakkabı).
+  - Sahne 1'in text_to_image_prompt'unda bu seçilen kıyafeti tam olarak tarif et ve referans görseldeki kıyafetin YERİNE geçtiğini açıkça belirt (örnek: ignore the clothing in the reference image; instead she is wearing <kıyafetin tam tarifi>).
+  - SONRAKİ HER SAHNEDE karakter TAM OLARAK AYNI kıyafeti giymeli. Aynı parçaları, renkleri ve kumaşları tekrar kelimelerle yaz (örnek: still wearing the exact same outfit established in scene 1 — <kıyafetin tam tarifi> — with no changes at all to clothing items or colors).
+  - Sadece durumla ilgili küçük değişiklikler eklenebilir (daha tozlu, kenarlarında hafif su damlaları, şort paçalarının biraz ıslanması gibi); ama sahneler arasında ana parçaları veya renkleri ASLA değiştirme.
+  - Giysilerin ıslanmasından bahsederken, kumaşın opak ve kalın kaldığını, göğüs veya cinsel bölgeleri belli etmediğini ima eden nötr ifadeler kullan; “clinging, sticking to her body, tight wet fabric” gibi kelimeler kullanma.
+  - Su içeren sahnelerde, üst kıyafetin üst kısmını mümkün olduğunca kuru bırak; sadece omuz ve yaka çevresinde hafif damlalar veya çok hafif nem olabilir. Göğüs hizasında büyük, koyu ıslak lekeler tarif etme.
+  - Daha belirgin ıslaklık, şortun alt kısımlarında, bacaklarda, ellerde veya bel çevresinde toplansın; bunu da nötr bir şekilde, hayatta kalma / serinleme bağlamında anlat.
+  - Seçilen kıyafet bu videonun TÜM sahnelerinde aynı kalır. Farklı bir kıyafet sadece bambaşka, yeni bir videoda görünmeli.
+
+IMAGE_TO_VIDEO_PROMPT İÇİN KURALLAR (HER SAHNE):
+
+- Her image_to_video_prompt:
+  - İngilizce tek bir paragraf olmalı.
+  - İlk kare, ilgili text_to_image_prompt’ta tanımlanan kare ile AYNI olmalı.
+  - Aynı sahne içinde mekân, kıyafet, ışık, ruh hali aynı kalmalı; sadece küçük hareketler ve mikro kamera hareketleri eklenmeli.
+  - Kamera HER ZAMAN ön kamera POV’dur:
+    - handheld vertical 9:16 front-facing camera point-of-view, as if the viewer is the phone itself at arm’s length.
+    - Promptta TELEFONUN KENDİSİNİN, SELFIE ÇUBUĞUNUN, AYNA YANSIMASININ VEYA KARAKTERİN TELEFONU TUTAN ELLERİNİN KADRAJDA GÖRÜNDÜĞÜNÜ ASLA SÖYLEME.
+    - Açık bir negatif talimat kullan: throughout the clip, the recording device, any phone or selfie stick, and her hands holding a device are never visible in the frame; we only see what the front camera sees.
+  - Dışarıdan, üçüncü bir kameradan çekilmiş gibi yan açı, arkadan görünüm vb. tarif etme.
+
+- Hareket ve kamera:
+  - Kameranın 8 saniye boyunca nasıl hafifçe sallandığını, biraz yaklaşma/uzaklaşma veya küçük yeniden kadraj hareketlerini anlat.
+  - Karakterin 8 saniye boyunca ne yaptığı (hafif jestler, baş hareketleri, etrafa bakması, küçük bir nesneyi kadrajın kenarında göstermesi vb.) gerçekçi ve kısa olmalı.
+  - Ortam hareketi (rüzgâr, su dalgalanması, ışık değişimi vb.) ekleyebilirsin, ama aşırı kaotik olmamalı.
+
+- SES VE KONUŞMA (Veo 3.1 AUDIO İÇİN TUTARLI AYAR):
+
+  - Veo videoyu ve sesi aynı anda ürettiği için, sesle ilgili her şeyi GÖRÜNTÜYLE AYNI PARAGRAFTA ve DOĞAL ANLATIMLA tarif et.
+  - Karakter, verilen konuşma dilinde (speech_language) kameraya konuşur. Bu dil adını İngilizce cümlede açıkça belirt (örneğin speech_language Türkçe ise “in Turkish”, İngilizce ise “in English” vb.).
+  - SES PROFİLİ TÜM SAHNELERDE VE TÜM VİDEOLARDA AYNI OLMALIDIR (aksi özellikle istenmedikçe):
+    - young adult woman
+    - very shy, soft, slightly breathy voice
+    - calm but emotional
+    - recorded with a simple smartphone microphone, with light ambient noise
+  - Her image_to_video_prompt’ta SESİ neredeyse aynı sabit kalıp ile tarif et:
+    - in the same very shy, soft, slightly breathy [speech_language] young woman voice, she …
+
+  - KONUŞMA UZUNLUĞU BÜTÇESİ (KRİTİK — cümle klibin İÇİNDE bitmeli):
+    - Her klip yalnızca yaklaşık 8 saniye ve Veo sonunda sert keser. Konuşma cümlesi çok uzun olursa cümle ortasından kesilir ve sonraki sahne aniden başlar. BU İSTENMİYOR.
+    - Sakin ve EKSİKSİZ biçimde yaklaşık 6-7 saniyede söylenebilecek bir cümle yaz; klibin sonunda yaklaşık 1-1.5 saniyelik kısa bir sessizlik kalsın. 8 saniyenin tamamını konuşmayla DOLDURMA.
+    - Somut ölçü: konuşma dilinde yaklaşık 12-16 kelime, 1-2 kısa cümle. Tek sahne için ASLA 18 kelimeyi geçme.
+    - Cümle basit ve kendi içinde tam olsun; tek bir uzun düşünceyi iki sahne arasına BÖLME. Her sahnenin cümlesi tek başına tamamlanmış bir cümle (veya iki) olmalı.
+    - Mesajı sahnelere yay: her sahne TEK küçük bir fikir söylesin. Her şeyi tek sahnede anlatmaya çalışma.
+
+  - BİREBİR KONUŞMA CÜMLESİNİ YAZ (uzunluğu, telaffuzu ve vurguyu bu kontrol eder):
+    - Konuşmayı sadece dolaylı tarif ETME. Bunun yerine karakterin söylediği BİREBİR kelimeleri, konuşma dilinde, tırnaksız düz metin olarak yaz.
+    - Paragrafın içinde net biçimde belirt; örnek: ... and in the same soft shy [speech_language] voice she says, word for word: <konuşma dilinde birebir kısa cümle>. Sonra varsa görsel detayla devam et.
+    - Çift tırnak kullanamadığın için cümleyi iki nokta üst üsteden sonra normal kelimelerle yaz. Paragrafın geri kalanı İngilizce olsa da bu cümle konuşma dilinde kalır.
+    - Cümleyi doğal ve kolay telaffuz edilebilir tut; tekerleme gibi zor diziler, çok uzun bileşik kelimeler, yabancı marka adları, rakamla yazılmış sayılar (küçük sayıları harfle yaz) ve telaffuzu zor kısaltmalardan kaçın ki ses artikülasyonu temiz kalsın.
+
+  - SES NETLİĞİ (karışan/üst üste binen sesi ve yanlış vurguyu düzeltir):
+    - Tam olarak TEK konuşmacı olmalı: ana karakter. Başka ses, arka planda konuşma, ikinci bir konuşan kişi, üst üste binen veya çiftlenmiş konuşma ve kendi sesinin yankısı OLMAMALI.
+    - Hiç arka plan müziği olmamalı. Ortam sesini çok hafif ve düşük tut ki sesle yarışmasın veya sesi boğmasın; konuşma her an net ve anlaşılır kalmalı.
+    - Karakter sakin, doğal ve acele etmeden, net artikülasyonla ve konuşma dilinde doğru telaffuzla konuşur. Aceleye getirmemeli, yutmamalı, kelimeleri sıkıştırmamalı.
+    - Sadece doğal cümle vurgusu: normal bir insanın günlük konuşmada vurgulayacağı kelimeleri, hafif ve doğal bir tonlamayla vurgular. Aşırı dramatize etme, bağırtma, rastgele kelimelere garip vurgu koyma.
+    - Bozulmasız, temiz ünsüzler: tüm ünsüzler, özellikle Türkçe s, ş, z, ç ve c sesleri yumuşak, doğal ve net telaffuz edilmeli; s seslerinde sert tıslama, ıslık, keskin sibilance, peltek (lisp) ses veya dijital bozulma OLMAMALI. Sızıcı sesler (sibilant) yumuşak ve insansı kalmalı. (İngilizce karşılığı: clean consonants, no harsh sibilance or hissing on the s sounds.)
+    - Dudak hareketlerinin bu birebir cümleyle doğal senkron olduğunu ve sesin tek kişinin konuştuğu temiz bir telefon ön kamera kaydı gibi olduğunu belirt.
+  - Su hissini tarif ederken, suyun kollarında, bacaklarında, yüzünde veya omuzlarında serinlik vermesinden bahset; göğüs bölgesine odaklanan, vücudu erotize eden anlatımdan kaçın.
+
+- SAHNE 1 İÇİN ÖZEL HOOK KURALI:
+
+  - Birinci sahnenin image_to_video_prompt’unda, karakter videoya HER ZAMAN önce kendini adıyla TANITARAK başlamalı, hemen ardından kısa ve dikkat çekici bir HOOK cümlesi gelmeli.
+  - Tanıtım, karakterin character_details içinde verilen KENDİ adını kullanmalı (örneğin kısa bir selamlama + adı, şu şekilde: Selam, ben <isim>). character_details'te verilen ismi aynen kullan; farklı bir isim UYDURMA. character_details'te isim yoksa, isimsiz kısa ve doğal bir selamlama kullan.
+  - Açılış cümlesini (selamlama + isim + hook) birebir, tırnaksız düz kelimelerle yaz (SES VE KONUŞMA kurallarındaki gibi). Bu açılışın tamamı sahne 1'in konuşma cümlesidir ve konuşma uzunluğu bütçesine UYMALI: selamlama + isim + hook birlikte sakin biçimde yaklaşık 6-7 saniyede eksiksiz söylenebilmeli (yaklaşık 12-16 kelime, asla 18'i geçme), klip kesilmeden bitmeli. Selamlamayı çok kısa tut ki hook da sığsın. Sahne 1'e hook'tan sonra fazladan uzun bir cümle EKLEME; sahne 1'i kısa ve vurucu tut.
+  - Bu hook, Reels / TikTok tarzı bir içerikte izleyicinin scroll’u durduracak kadar net ve merak uyandırıcı olmalı.
+
+VIDEO_CAPTION KURALLARI:
+
+video_caption:
+  - Konuşma dilinde (speech_language) olmalı.
+  - Toplam uzunluk 70 karakteri (boşluklar ve emojiler dahil) ASLA geçmemeli. Çıktıdan önce karakter sayısını kontrol et ve gerekiyorsa kısalt.
+  - En fazla 1–2 kısa cümleden oluşan...
+  - 1–2 emoji içermeli.
+  - Hashtag, link veya mention içermemeli.
+  - Tek satır olmalı (satır başı yok).
+
+Şimdi lütfen:
+
+- "scenes" alanında, sahne_sayisi kadar sahne oluştur; her sahnenin "text_to_image_prompt" ve "image_to_video_prompt" alanlarını yukarıdaki kurallara göre doldur.
+- "video_caption" alanına ise tüm çok sahneli videoyu özetleyen, izleyiciyi meraklandıran veya aksiyona çağıran kısa bir caption yaz.
+
+Tüm bunları, YALNIZCA TEK bir JSON objesi olarak üret.

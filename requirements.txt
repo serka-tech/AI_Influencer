@@ -1,0 +1,18 @@
+# AI Influencer — Kilitli Bağımlılıklar (Strict Pinning)
+# Her yeni paketin '==' ile sabit sürümü olmalıdır.
+
+# Telegram Bot Framework
+python-telegram-bot==21.10
+
+# OpenAI (Senaryo Agent)
+openai==1.68.2
+
+# HTTP İstekleri (Kie AI, Upload-Post, video indirme)
+requests==2.32.3
+urllib3==2.2.1
+
+# Replicate (Sahne birleştirme — concat)
+replicate==1.0.4
+
+# .env yükleme (lokal geliştirme)
+python-dotenv==1.0.1

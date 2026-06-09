@@ -1,0 +1,6 @@
+# Nixpacks Build Configuration for Railway
+# Bu proje video birleştirmeyi Replicate (cloud) üzerinde yapar — lokal ffmpeg gerekmez.
+# Worker olarak çalışır (Telegram long polling).
+
+[start]
+cmd = "python main.py"
