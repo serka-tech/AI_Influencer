@@ -86,8 +86,13 @@ class ProductionPipeline:
         for video_attempt in range(1, 4):
             log.info(f"Sahne {index}: video üretimi başlıyor (Deneme {video_attempt})")
             try:
-                # Retry'larda prompt'u hafifçe değiştirerek önbellek/filtre takılmasını aşmayı dene
-                current_prompt = i2v if video_attempt == 1 else f"{i2v} [v{video_attempt}]"
+                # Retry'larda prompt'u hafifçe değiştir. 3. denemede ise tamamen risksiz jenerik bir prompt kullan.
+                if video_attempt == 1:
+                    current_prompt = i2v
+                elif video_attempt == 2:
+                    current_prompt = f"{i2v} [v2]"
+                else:
+                    current_prompt = "A young person looking directly at the camera and talking calmly. Cinematic lighting, photorealistic. Safe and clear content."
                 
                 video_task_id = await asyncio.to_thread(
                     self.kie.create_veo_video,
