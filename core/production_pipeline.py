@@ -38,29 +38,32 @@ class ProductionPipeline:
         self,
         kie: KieAIService,
         replicate: ReplicateService,
+        elevenlabs: ElevenLabsService,
         reference_image_url: str,
         aspect_ratio: str = "9:16",
         resolution: str = "1K",
     ):
         self.kie = kie
         self.replicate = replicate
+        self.elevenlabs = elevenlabs
         self.reference_image_url = reference_image_url
         self.aspect_ratio = aspect_ratio
         self.resolution = resolution
 
     async def _produce_scene(self, index: int, scene: dict, progress=None) -> str:
-        """Tek bir sahne için görsel → video üretir, video URL'i döner."""
+        """Tek bir sahne için görsel → ses → video → lipsync üretir."""
+        import asyncio
         t2i = scene["text_to_image_prompt"]
         i2v = scene["image_to_video_prompt"]
+        voice_text = scene.get("voiceover_text") or scene.get("caption") or scene.get("voiceover", i2v)
 
-        # Referans görseller: her zaman karakter; keşif modunda ek olarak o sahnenin mekanı
         image_input = [self.reference_image_url]
         place_ref = scene.get("reference_image_url")
         if place_ref:
             image_input.append(place_ref)
             log.info(f"Sahne {index}: mekan referansı eklendi → {str(place_ref)[:70]}")
 
-        # 1) Görsel — Nano Banana Pro (karakter + opsiyonel mekan referansı ile)
+        # 1) Görsel Üretimi (Nano Banana Pro)
         log.info(f"Sahne {index}: görsel üretimi başlıyor")
         image_task_id = await asyncio.to_thread(
             self.kie.create_image,
@@ -72,63 +75,65 @@ class ProductionPipeline:
         )
         image_result = await self.kie.async_poll_task(image_task_id)
         if image_result.get("status") != "success" or not image_result.get("urls"):
-            raise PipelineError(
-                f"Sahne {index} görsel üretimi başarısız: {image_result.get('error', '?')}",
-                stage="image",
-                code=image_result.get("code"),
-            )
+            raise PipelineError(f"Sahne {index} görsel üretimi başarısız: {image_result.get('error', '?')}", stage="image")
         image_url = image_result["urls"][0]
-        log.info(f"Sahne {index}: görsel hazır → {image_url[:70]}")
-        if progress:
-            await progress(f"🖼️ Sahne {index} görseli hazır")
+        if progress: await progress(f"🖼️ Sahne {index} görseli hazır")
 
-        # 2) Video — Veo 3.1 (image-to-video, native ses)
+        # 2) Ses Üretimi (ElevenLabs)
+        log.info(f"Sahne {index}: ses üretimi başlıyor")
+        try:
+            audio_bytes = await self.elevenlabs.generate_audio(voice_text)
+            audio_url = await self.replicate.async_upload_audio(audio_bytes, f"scene_{index}_voice.mp3")
+            if progress: await progress(f"🎙️ Sahne {index} sesi ElevenLabs ile üretildi")
+        except Exception as e:
+            raise PipelineError(f"Sahne {index} ses üretimi başarısız: {e}", stage="audio")
+
+        # 3) Baz Video Üretimi (Kling 3.0 via Kie AI)
         for video_attempt in range(1, 4):
-            log.info(f"Sahne {index}: video üretimi başlıyor (Deneme {video_attempt})")
+            log.info(f"Sahne {index}: Kling 3.0 baz video üretimi başlıyor (Deneme {video_attempt})")
             try:
-                # Retry'larda prompt'u hafifçe değiştir. 3. denemede ise tamamen risksiz jenerik bir prompt kullan.
-                if video_attempt == 1:
-                    current_prompt = i2v
-                elif video_attempt == 2:
-                    current_prompt = f"{i2v} [v2]"
-                else:
-                    current_prompt = f"{i2v}. The character is speaking STRICTLY in Turkish language. Photorealistic, cinematic lighting."
+                # İlk denemede orijinal prompt, sonrakilerde hafif varyasyon
+                current_prompt = i2v if video_attempt == 1 else f"{i2v} [v{video_attempt}]"
                 
                 video_task_id = await asyncio.to_thread(
-                    self.kie.create_veo_video,
+                    self.kie.create_kling_task,
                     prompt=current_prompt,
-                    image_url=image_url,
-                    aspect_ratio=self.aspect_ratio,
-                    enable_fallback=True  # Hata verirse Kling/Luma gibi yedek modellere geç
+                    image_url=image_url
                 )
-                video_result = await self.kie.async_poll_veo_task(video_task_id)
+                video_result = await self.kie.async_poll_task(video_task_id)
                 if video_result.get("status") == "success" and video_result.get("urls"):
-                    video_url = video_result["urls"][0]
-                    log.info(f"Sahne {index}: video hazır → {video_url[:70]}")
-                    if progress:
-                        await progress(f"🎬 Sahne {index} videosu hazır")
-                    return video_url
+                    base_video_url = video_result["urls"][0]
+                    if progress: await progress(f"🎬 Sahne {index} Kling baz videosu hazır")
+                    break # Başarılı oldu, döngüden çık
                 else:
                     err_msg = video_result.get('error', '?')
-                    err_code = video_result.get('code')
-                    log.warning(f"Sahne {index} video üretimi başarısız (Deneme {video_attempt}): {err_msg}")
+                    log.warning(f"Sahne {index} Kling video üretimi başarısız (Deneme {video_attempt}): {err_msg}")
                     if video_attempt == 3:
-                        raise PipelineError(
-                            f"Sahne {index} video üretimi 3 denemede de başarısız: {err_msg}",
-                            stage="video",
-                            code=err_code,
-                        )
+                        raise PipelineError(f"Sahne {index} Kling video üretimi 3 denemede de başarısız: {err_msg}", stage="video")
             except PipelineError:
                 raise
             except Exception as e:
-                log.warning(f"Sahne {index} video üretimi sırasında exception (Deneme {video_attempt}): {e}")
+                log.warning(f"Sahne {index} Kling video üretimi sırasında exception (Deneme {video_attempt}): {e}")
                 if video_attempt == 3:
-                    raise PipelineError(f"Sahne {index} video üretimi başarısız: {e}", stage="video")
+                    raise PipelineError(f"Sahne {index} Kling video üretimi başarısız: {e}", stage="video")
             
-            # Yeniden denemeden önce biraz bekle
+            # Yeniden denemeden önce bekle ve kullanıcıya bildir
             if progress:
-                await progress(f"⚠️ Sahne {index} video üretimi takıldı, tekrar deneniyor ({video_attempt}/3)...")
+                await progress(f"⚠️ Sahne {index} Kling video üretimi takıldı, tekrar deneniyor ({video_attempt}/3)...")
             await asyncio.sleep(5)
+
+        # 4) Lip-Sync (Replicate cjwbw/video-retalking)
+        log.info(f"Sahne {index}: Lip-Sync birleştirme başlıyor")
+        try:
+            if progress: await progress(f"👄 Sahne {index} Dudak senkronizasyonu yapılıyor (Lip-Sync)...")
+            final_video_url = await self.replicate.async_lip_sync(base_video_url, audio_url)
+            if progress: await progress(f"✅ Sahne {index} tamamlandı!")
+            return final_video_url
+        except Exception as e:
+            log.warning(f"Lip-Sync başarısız oldu, baz video geri dönülüyor: {e}")
+            # Lip-Sync patlarsa en azından elimizde video var, merge_video_audio ile sesi üstüne yapıştıralım
+            fallback_url = await self.replicate.async_merge_video_audio(base_video_url, audio_url, replace_audio=True)
+            return fallback_url
 
     async def run(self, scenario: dict, progress=None) -> str:
         """

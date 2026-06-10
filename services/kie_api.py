@@ -186,8 +186,41 @@ class KieAIService:
         return task_id
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 🎬 VİDEO ÜRETİMİ — Veo 3.1 (image-to-video)
+    # 🎬 VİDEO ÜRETİMİ — Veo 3.1 & Kling 3.0 (image-to-video)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    def create_kling_task(
+        self,
+        prompt: str,
+        image_url: str,
+    ) -> str:
+        """
+        Kling 3.0 ile sessiz (native sound kapalı) baz video üretir.
+        """
+        if not is_native_kie_url(image_url):
+            log.info(f"Kling için görsel Kie AI'a yükleniyor: {image_url[:60]}...")
+            image_url = self.upload_file_from_url(image_url)
+
+        input_data = {
+            "prompt": prompt,
+            "image_input": [image_url],
+            "aspect_ratio": "9:16",
+            "sound": False # Sesi biz ElevenLabs+Replicate ile ekleyeceğiz
+        }
+
+        # Kling modeli Kie AI'da genelde 'kling' veya 'kling-v1.5' gibi adlandırılır. 
+        # Eğer 'kling-3.0/video' çalışmadıysa, 'kling' deneyelim.
+        payload = {"model": "kling", "input": input_data}
+        try:
+            task_id = self._create_task(payload)
+        except Exception as e:
+            # Fallback model denemesi
+            log.warning(f"Kling model adı ile görev oluşturulamadı, alternatif deneniyor: {e}")
+            payload["model"] = "kling-3.0/video"
+            task_id = self._create_task(payload)
+            
+        log.info(f"Kling video görevi oluşturuldu: {task_id}")
+        return task_id
 
     def create_veo_video(
         self,

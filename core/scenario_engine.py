@@ -222,10 +222,13 @@ class ScenarioEngine:
                 raise ScenarioError(f"Sahne {i} obje değil")
             t2i = scene.get("text_to_image_prompt")
             i2v = scene.get("image_to_video_prompt")
+            vot = scene.get("voiceover_text")
             if not isinstance(t2i, str) or not t2i.strip():
                 raise ScenarioError(f"Sahne {i}: text_to_image_prompt boş")
             if not isinstance(i2v, str) or not i2v.strip():
                 raise ScenarioError(f"Sahne {i}: image_to_video_prompt boş")
+            if not isinstance(vot, str) or not vot.strip():
+                raise ScenarioError(f"Sahne {i}: voiceover_text boş")
 
         caption = result.get("video_caption")
         if not isinstance(caption, str) or not caption.strip():

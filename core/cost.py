@@ -19,43 +19,46 @@ import os
 
 # Kie kredi birim maliyetleri (1K, 9:16)
 NANO_BANANA_PRO_CREDITS = 18
-VEO_FAST_CREDITS = 312
-CREDITS_PER_SCENE = NANO_BANANA_PRO_CREDITS + VEO_FAST_CREDITS  # 330
+KLING_VIDEO_CREDITS = 75 # Kling 3.0 (no-audio, ~5 sec) -> 14 credits/s * 5s = 70. 75 as buffer.
+CREDITS_PER_SCENE = NANO_BANANA_PRO_CREDITS + KLING_VIDEO_CREDITS
 
 # Kredi → USD (yaklaşık; env ile ayarlanabilir). Tipik Kie paketleri ~$0.00125/kredi.
 KIE_CREDIT_TO_USD = float(os.environ.get("KIE_CREDIT_TO_USD", "0.00125"))
 
 # Ek servisler (yaklaşık, USD)
-REPLICATE_CONCAT_USD = 0.01   # çok sahnede video birleştirme (tek sahnede yok)
-OPENAI_FLAT_USD = 0.03        # senaryo + konu + caption üretimi (toplam)
-
+REPLICATE_CONCAT_USD = 0.01   # çok sahnede video birleştirme
+OPENAI_FLAT_USD = 0.03        # senaryo + konu + caption üretimi
+REPLICATE_LIPSYNC_USD = 0.02  # sahne başı Lip-Sync (video-retalking)
+ELEVENLABS_USD = 0.01         # sahne başı ses üretimi
 
 def estimate_cost(scene_count: int) -> dict:
     """Verilen sahne sayısı için maliyet tahmini döner."""
     kie_credits = CREDITS_PER_SCENE * scene_count
     kie_usd = kie_credits * KIE_CREDIT_TO_USD
-    replicate_usd = REPLICATE_CONCAT_USD if scene_count > 1 else 0.0
+    replicate_usd = (REPLICATE_CONCAT_USD if scene_count > 1 else 0.0) + (REPLICATE_LIPSYNC_USD * scene_count)
+    elevenlabs_usd = ELEVENLABS_USD * scene_count
     openai_usd = OPENAI_FLAT_USD
-    total_usd = kie_usd + replicate_usd + openai_usd
+    total_usd = kie_usd + replicate_usd + openai_usd + elevenlabs_usd
     return {
         "scene_count": scene_count,
         "kie_credits": kie_credits,
         "kie_usd": round(kie_usd, 3),
         "replicate_usd": round(replicate_usd, 3),
+        "elevenlabs_usd": round(elevenlabs_usd, 3),
         "openai_usd": round(openai_usd, 3),
         "total_usd": round(total_usd, 3),
     }
-
 
 def format_cost(cost: dict, balance: float | None = None) -> str:
     """Telegram için maliyet özeti metni."""
     lines = [
         "💰 *Tahmini maliyet*",
-        f"• Kie: {cost['kie_credits']} kredi (~${cost['kie_usd']:.2f})",
+        f"• Kie (Görsel+Kling): {cost['kie_credits']} kredi (~${cost['kie_usd']:.2f})",
+        f"• Ses (ElevenLabs): ~${cost['elevenlabs_usd']:.2f}",
     ]
     if cost["replicate_usd"]:
-        lines.append(f"• Birleştirme: ~${cost['replicate_usd']:.2f}")
-    lines.append(f"• AI metin: ~${cost['openai_usd']:.2f}")
+        lines.append(f"• Lip-Sync & Birleştirme: ~${cost['replicate_usd']:.2f}")
+    lines.append(f"• AI senaryo: ~${cost['openai_usd']:.2f}")
     lines.append(f"*Toplam: ~${cost['total_usd']:.2f}* ({cost['scene_count']} sahne)")
     if balance is not None:
         lines.append(f"\n🏦 Kalan Kie bakiyesi: {balance:.0f} kredi")

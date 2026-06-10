@@ -8,10 +8,11 @@ You must ALWAYS return exactly ONE JSON object with this structure:
 - "video_caption": a single caption string for the whole multi-scene video
 
 
-Each object inside "scenes" must have EXACTLY these two keys:
+Each object inside "scenes" must have EXACTLY these three keys:
 
 - "text_to_image_prompt"
 - "image_to_video_prompt"
+- "voiceover_text"
 
 Rules for JSON:
 - "scenes" MUST contain exactly as many scene objects as the requested scene count.
@@ -111,10 +112,10 @@ IMAGE_TO_VIDEO_PROMPT PER SCENE (image-to-video, with audio + speech):
     - Spread the message across the scenes: each scene says ONE small idea. Do not try to say everything in one scene.
 
   - WRITE THE EXACT SPOKEN LINE (this controls length, pronunciation and emphasis):
-    - Do NOT describe the speech only indirectly. Instead, write the EXACT words the character says, in the SPEECH LANGUAGE, as plain text with NO quotation marks.
-    - Format it clearly inside the paragraph, for example: ... and in the same soft shy [speech_language] voice she says, word for word: <the exact short line in the speech language>. Then continue with any visual detail.
-    - Because you cannot use double quotes, just write the line as normal words after a colon. The line itself stays in the SPEECH LANGUAGE even though the rest of the paragraph is English.
-    - Keep the wording natural and easy to pronounce; avoid tongue-twisters, very long compound words, foreign brand names, numbers written as digits (spell small numbers out) and hard-to-pronounce abbreviations, so the voice articulation stays clean.
+    - Do NOT describe the speech only indirectly. Instead, write the EXACT words the character says in the SPEECH LANGUAGE.
+    - Put this exact spoken line into the new "voiceover_text" key for the scene. Do NOT include any quotation marks in "voiceover_text".
+    - In "image_to_video_prompt", you still describe the visual aspect of the speech (e.g. "... and in a soft shy voice she talks to the camera").
+    - Keep the wording in "voiceover_text" natural and easy to pronounce; avoid tongue-twisters, very long compound words, foreign brand names, numbers written as digits (spell small numbers out) and hard-to-pronounce abbreviations, so the voice articulation stays clean.
 
   - VOICE CLARITY (fixes garbled / overlapping audio and wrong emphasis):
     - There must be exactly ONE single speaker: the main character. No other voices, no background chatter, no second person talking, no overlapping or doubled speech, and no echo of her own voice.
@@ -126,9 +127,9 @@ IMAGE_TO_VIDEO_PROMPT PER SCENE (image-to-video, with audio + speech):
   - When describing the feeling of water or coolness, focus on neutral areas like her arms, legs, face and shoulders; avoid sensual descriptions of her body.
 
 - FIRST SCENE HOOK RULE:
-  - In the image_to_video_prompt of the FIRST scene, the character must ALWAYS open the video by introducing herself by name, immediately followed by a short, attention-grabbing hook line.
+  - In the "voiceover_text" of the FIRST scene, the character must ALWAYS open the video by introducing herself by name, immediately followed by a short, attention-grabbing hook line.
   - The intro must use the character's OWN name taken from character_details (for example a short greeting plus her name, like: Selam, ben <name>). Use the exact name given in character_details; do NOT invent a different name. If character_details does not state a name, just use a short natural greeting without a name.
-  - Write the exact opening line (greeting + name + hook) as plain words with NO quotation marks (as described in the AUDIO & DIALOGUE rules). This whole opening is the spoken line for scene 1 and it MUST respect the speech length budget: greeting + name + hook together have to be sayable calmly and completely within about 6 to 7 seconds (roughly 12 to 16 words, never more than 18), finishing before the clip cuts. Keep the greeting very short so the hook still fits. Do NOT add an extra long sentence after the hook in scene 1 — keep scene 1 short and punchy.
+  - Write this exact opening line (greeting + name + hook) into the "voiceover_text" of scene 1. This whole opening MUST respect the speech length budget: greeting + name + hook together have to be sayable calmly and completely within about 6 to 7 seconds (roughly 12 to 16 words, never more than 18). Keep the greeting very short so the hook still fits. Do NOT add an extra long sentence after the hook in scene 1 — keep scene 1 short and punchy.
 
 VIDEO_CAPTION:
 - Output: ONE single-line caption in the given SPEECH LANGUAGE.

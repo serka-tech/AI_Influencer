@@ -41,6 +41,7 @@ from services.kie_api import KieAIService
 from services.replicate_service import ReplicateService
 from services.openai_service import OpenAIService
 from services.upload_post_service import UploadPostService
+from services.elevenlabs_service import ElevenLabsService
 from core.scenario_engine import ScenarioEngine, ScenarioError
 from core.production_pipeline import ProductionPipeline, PipelineError
 from core.topic_resolver import TopicResolver
@@ -62,19 +63,26 @@ log = get_logger("main")
     COST_REVIEW,
 ) = range(8)
 
-# Her sahne Veo 3.1'de ~8 saniye
-SECONDS_PER_SCENE = 8
+# Her sahne Veo 3.1'de ~8 saniye, Kling 3.0'da genelde 5s
+SECONDS_PER_SCENE = 5
 
 # ── Servisler (boot anında bir kez) ──
 kie = KieAIService(settings.KIE_API_KEY, base_url=settings.KIE_BASE_URL)
 replicate_svc = ReplicateService(settings.REPLICATE_API_TOKEN)
 openai_svc = OpenAIService(settings.OPENAI_API_KEY, model=settings.OPENAI_SCENARIO_MODEL)
+
+import os
+# Load elevenlabs key directly from env (if not in settings yet)
+elevenlabs_key = os.getenv("ELEVENLABS_API_KEY", "")
+elevenlabs_svc = ElevenLabsService(elevenlabs_key)
+
 scenario_engine = ScenarioEngine(openai_svc)
 topic_resolver = TopicResolver(openai_svc)
 caption_generator = CaptionGenerator(openai_svc)
 pipeline = ProductionPipeline(
     kie=kie,
     replicate=replicate_svc,
+    elevenlabs=elevenlabs_svc,
     reference_image_url=settings.REFERENCE_IMAGE_URL,
     aspect_ratio=settings.ASPECT_RATIO,
     resolution=settings.IMAGE_RESOLUTION,
@@ -255,11 +263,16 @@ async def on_scenes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Arka planda üretim sürüyorsa onu da durdur
-    task = context.user_data.get("production_task")
+    chat_id = update.effective_chat.id
+    task = running_tasks.get(chat_id)
     cancelled_production = False
     if task and not task.done():
         task.cancel()
         cancelled_production = True
+    
+    # Task'ı listeden temizle
+    if chat_id in running_tasks:
+        del running_tasks[chat_id]
 
     context.user_data.clear()
     if cancelled_production:
@@ -563,6 +576,9 @@ async def _show_cost(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> int:
     return COST_REVIEW
 
 
+# Global dictionary for running tasks to avoid PicklePersistence crash
+running_tasks = {}
+
 async def on_cost_decision(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -579,7 +595,8 @@ async def on_cost_decision(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     await query.message.reply_text("🚀 Üretim başlıyor... (durdurmak için /iptal)")
     # Uzun iş arka planda; conversation'dan çık. Task'ı sakla ki /iptal durdurabilsin.
-    context.user_data["production_task"] = asyncio.create_task(_run_production(update, context))
+    chat_id = update.effective_chat.id
+    running_tasks[chat_id] = asyncio.create_task(_run_production(update, context))
     return ConversationHandler.END
 
 
@@ -589,7 +606,7 @@ async def on_cost_decision(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 async def _run_production(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_chat.id
     bot = context.bot
-    language = context.user_data["language"]
+    language = context.user_data.get("language", "Turkish")
     # Senaryo ve konu, onay aşamalarında üretildi ve user_data'ya yazıldı
     topic = context.user_data["topic"]
     scenario = context.user_data["scenario"]

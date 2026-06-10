@@ -325,6 +325,90 @@ class ReplicateService:
                 except Exception:
                     log.warning(f"Replicate prediction cancel başarısız: {getattr(prediction, 'id', '?')}", exc_info=True)
 
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 👄 LİP SYNC (Dudak Okuma) — cjwbw/video-retalking
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    VIDEO_RETALKING_VERSION = "db5a650c807b007dc0f9e5fc488dbbc73fb9c8fbab3e2f5ee66b4461f3641fb0" # video-retalking versiyonu
+
+    async def async_lip_sync(
+        self,
+        video_url: str,
+        audio_url: str
+    ) -> str:
+        """
+        Kling ile üretilmiş baz video ve ElevenLabs sesini dudak senkronizasyonu ile birleştirir.
+        """
+        import asyncio as _asyncio
+
+        prediction = None
+        completed = False
+        try:
+            async with _asyncio.timeout(ASYNC_MERGE_HARD_TIMEOUT):
+                log.info(f"Async Lip-Sync (video-retalking) başlatılıyor...")
+
+                prediction = await _asyncio.to_thread(
+                    self.client.predictions.create,
+                    version=self.VIDEO_RETALKING_VERSION,
+                    input={
+                        "face": video_url,
+                        "input_audio": audio_url
+                    },
+                )
+
+                log.info(f"Lip-Sync prediction oluşturuldu: {prediction.id}")
+
+                reload_failures = 0
+                MAX_RELOAD_FAILURES = 3
+                prev_status: str | None = None
+
+                for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
+                    try:
+                        await _asyncio.to_thread(prediction.reload)
+                        reload_failures = 0
+                    except Exception as reload_err:
+                        reload_failures += 1
+                        log.warning(f"Lip-Sync reload geçici hata: {reload_err}")
+                        if reload_failures >= MAX_RELOAD_FAILURES:
+                            raise RuntimeError(f"Lip-Sync reload tekrar tekrar başarısız: {reload_err}")
+                        await _asyncio.sleep(2)
+                        continue
+
+                    if prediction.status == "succeeded":
+                        output_url = prediction.output
+                        if isinstance(output_url, list):
+                            output_url = output_url[0] if output_url else None
+                        output_url = str(output_url) if output_url else None
+                        if not output_url or not output_url.startswith("http"):
+                            raise RuntimeError(f"Lip-Sync geçersiz output: {output_url}")
+                        log.info(f"Lip-Sync tamamlandı: {prediction.id} ({attempt} deneme)")
+                        completed = True
+                        return output_url
+
+                    if prediction.status in ("failed", "canceled"):
+                        completed = True
+                        error = prediction.error or "Bilinmeyen hata"
+                        raise RuntimeError(f"Lip-Sync başarısız: {error}")
+
+                    if prediction.status != prev_status:
+                        log.info(f"Lip-Sync polling [{attempt}]: {prev_status}→{prediction.status}")
+                        prev_status = prediction.status
+                    
+                    interval = 2 if attempt == 1 else POLL_INTERVAL_SECONDS
+                    await _asyncio.sleep(interval)
+
+                raise TimeoutError(f"Lip-Sync timeout: {prediction.id}")
+
+        except Exception as e:
+            log.error("Lip-Sync genel hatası", exc_info=True)
+            raise
+        finally:
+            if prediction is not None and not completed:
+                try:
+                    await _asyncio.to_thread(prediction.cancel)
+                except Exception:
+                    pass
+
     def get_prediction_status(self, prediction_id: str) -> dict:
         """
         Mevcut prediction durumunu sorgular.
