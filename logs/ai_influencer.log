@@ -1,6 +1,8 @@
 /Users/sercanbingol/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
   warnings.warn(
 Traceback (most recent call last):
-  File "/Users/sercanbingol/Desktop/Antigravity/Projeler/AI_Influencer/main.py", line 21, in <module>
-    from telegram import (
-ModuleNotFoundError: No module named 'telegram'
+  File "/Users/sercanbingol/Desktop/Antigravity/Projeler/AI_Influencer/main.py", line 41, in <module>
+    from services.replicate_service import ReplicateService
+  File "/Users/sercanbingol/Desktop/Antigravity/Projeler/AI_Influencer/services/replicate_service.py", line 14, in <module>
+    import replicate
+ModuleNotFoundError: No module named 'replicate'

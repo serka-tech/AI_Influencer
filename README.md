@@ -1,7 +1,9 @@
-# AI Influencer — Çok Sahneli Veo 3.1 Video Otomasyonu
+# AI Influencer — Çok Sahneli Çift Motorlu Video Otomasyonu
 
 > Telegram bot ile sabit bir AI influencer karakteri için çok sahneli "ön kamera POV"
-> kısa video (Reels / TikTok / Shorts) üretir. Nano Banana Pro + Veo 3.1 + Replicate.
+> kısa video (Reels / TikTok / Shorts) üretir. Nano Banana Pro görsel + iki seçilebilir
+> video motoru: Veo 3.1 (kendi sesiyle) veya Kling 3.0 + ElevenLabs + lip-sync. `VIDEO_ENGINE`
+> env'i ile seçilir (varsayılan `veo`).
 
 **Proje:** Antigravity Ecosystem
 **Tip:** Telegram Bot (Worker — long polling)
@@ -24,15 +26,19 @@ ile native sesli image-to-video üretir → sahneleri birleştirir → videoyu T
 3. **Senaryo + ONAY** — GPT (`gpt-5.1`) ile her sahneye `text_to_image_prompt` + `image_to_video_prompt`. Senaryo Telegram'da gösterilir ve onay istenir: ✅ Onayla / ✏️ Düzenle (serbest metinle revizyon) / 🔄 Yeniden üret. Üretim ancak onaydan sonra ilerler.
 4. **Maliyet + ONAY** — senaryo onaylanınca tahmini Kie kredisi + yaklaşık USD + kalan bakiye gösterilir (`core/cost.py`) ve tekrar onay istenir: ✅ Onayla, üret / ❌ İptal.
 5. **Görsel** — Nano Banana Pro, sabit karakter referansı + 9:16 (Reels ölçüsü).
-6. **Video** — Veo 3.1 fast, image-to-video, native ses (ayrı seslendirme yok).
+6. **Video** — seçili motora göre:
+   - `veo` (varsayılan): Veo 3.1 fast, image-to-video, native ses (ayrı seslendirme yok), ~8 sn/sahne.
+   - `kling`: Kling 3.0 sessiz baz video + ElevenLabs Türkçe ses + Replicate lip-sync (`cjwbw/video-retalking`, başarısızsa sesi merge ile bindirir), ~5 sn/sahne.
 7. **Birleştirme** — Replicate `lucataco/video-merge` ile concat.
 8. **Açıklama + Hashtag** — keşfet/Reels odaklı paylaşım açıklaması + 12-20 hashtag (`core/caption_generator.py`).
 9. **Teslim + Onay** — video + açıklama Telegram'a, ✅ Yayınla / ❌ Yayınlama.
 10. **Yayın** — Upload-Post ile TikTok/Instagram(Reels)/YouTube (opsiyonel).
 
 ### Maliyet (ölçülen, 1K/9:16)
-- Nano Banana Pro görsel: **18 kredi**, Veo 3.1 fast 8 sn video: **312 kredi** → sahne başı **330 kredi**.
-- Kredi→USD `KIE_CREDIT_TO_USD` env ile ayarlanır (varsayılan ~$0.00125/kredi).
+- Görsel (Nano Banana Pro): **18 kredi**/sahne (her iki motorda ortak).
+- `veo`: Veo 3.1 fast 8 sn video **312 kredi** → sahne başı **330 kredi** (ElevenLabs/lip-sync yok).
+- `kling`: Kling 3.0 ~5 sn **75 kredi** → sahne başı **93 kredi** + sahne başı ElevenLabs ve lip-sync (Replicate, ~$0.03/sahne).
+- Kredi→USD `KIE_CREDIT_TO_USD` env ile ayarlanır (varsayılan ~$0.00125/kredi). Maliyet ekranı seçili motora göre hesaplar.
 
 ---
 
@@ -53,10 +59,12 @@ AI_Influencer/
 ├── core/
 │   ├── scenario_engine.py       ← senaryo üretimi + JSON doğrulama + retry + Türkçe özet
 │   ├── place_research.py        ← keşif modu: gerçek mekan araştırma (scraping) + referans görsel
-│   └── production_pipeline.py   ← görsel→video→concat orkestratörü (sahne başına mekan referansı)
+│   ├── cost.py                  ← motora göre (veo/kling) maliyet tahmini
+│   └── production_pipeline.py   ← görsel→video→concat orkestratörü (motor dallanması)
 ├── services/
-│   ├── kie_api.py               ← Nano Banana Pro + Veo 3.1 (create/poll)
-│   ├── replicate_service.py     ← concat_videos
+│   ├── kie_api.py               ← Nano Banana Pro + Veo 3.1 + Kling 3.0 (create/poll)
+│   ├── replicate_service.py     ← concat + lip-sync + ses bindirme
+│   ├── elevenlabs_service.py    ← (kling motoru) Türkçe TTS
 │   ├── upload_post_service.py   ← çoklu platform yayını
 │   ├── openai_service.py        ← chat_json
 │   └── imgbb_service.py         ← (opsiyonel) lokal görsel → public URL
@@ -67,10 +75,10 @@ AI_Influencer/
 
 ## ⚙️ Environment Setup
 
-1. **Sanal ortam + bağımlılıklar**
+1. **Sanal ortam + bağımlılıklar** (Python 3.11+ gerekir — `replicate_service.py` `asyncio.timeout` kullanır)
    ```bash
    cd Projeler/AI_Influencer
-   python3 -m venv .venv && source .venv/bin/activate
+   python3.11 -m venv .venv && source .venv/bin/activate
    pip install -r requirements.txt
    ```
 
@@ -79,6 +87,8 @@ AI_Influencer/
    cp .env.example .env
    ```
    Doldur: `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `KIE_API_KEY`, `REPLICATE_API_TOKEN`.
+   `VIDEO_ENGINE=veo` (varsayılan) veya `VIDEO_ENGINE=kling`. `kling` seçersen
+   `ELEVENLABS_API_KEY` zorunlu (ve istersen `ELEVENLABS_VOICE_ID` ile Türkçe ses).
    (Antigravity'de `master.env`'den `/sifre-bagla` ile otomatik bağlanabilir.)
 
 3. **Karakteri tanımla**
@@ -99,7 +109,8 @@ AI_Influencer/
 ---
 
 ## 📝 Notlar
-- Veo 3.1 videoyu kendi sesiyle üretir → ElevenLabs/TTS yok.
+- `veo` motorunda video kendi sesiyle üretilir → ElevenLabs/TTS yok. `kling` motorunda
+  ses ElevenLabs ile üretilip lip-sync ile videoya bindirilir.
 - Görsel/video başarısız üretimlerde Kie AI kredisi iade eder.
 - Karakter referans görseli ve `karakter_konsept.txt` `.gitignore`'da — paylaşımda sızmaz.
 - Deploy için: `/canli-yayina-al` skill ile Railway worker olarak 7/24 alınabilir.

@@ -140,7 +140,7 @@ IMAGE_TO_VIDEO_PROMPT İÇİN KURALLAR (HER SAHNE):
 
 - Hareket ve kamera:
   - Kameranın 8 saniye boyunca nasıl hafifçe sallandığını, biraz yaklaşma/uzaklaşma veya küçük yeniden kadraj hareketlerini anlat.
-  - Karakterin 8 saniye boyunca ne yaptığı (hafif jestler, baş hareketleri, etrafa bakması, küçük bir nesneyi kadrajın kenarında göstermesi vb.) gerçekçi ve kısa olmalı.
+  - Karakterin 8 saniye boyunca ne yaptığı: __MOVEMENT_RULE_TR__
   - Ortam hareketi (rüzgâr, su dalgalanması, ışık değişimi vb.) ekleyebilirsin, ama aşırı kaotik olmamalı.
 
 - SES VE KONUŞMA (Veo 3.1 AUDIO İÇİN TUTARLI AYAR):
@@ -156,9 +156,7 @@ IMAGE_TO_VIDEO_PROMPT İÇİN KURALLAR (HER SAHNE):
     - in the same very shy, soft, slightly breathy [speech_language] young woman voice, she …
 
   - KONUŞMA UZUNLUĞU BÜTÇESİ (KRİTİK — cümle klibin İÇİNDE bitmeli):
-    - Her klip yalnızca yaklaşık 8 saniye ve Veo sonunda sert keser. Konuşma cümlesi çok uzun olursa cümle ortasından kesilir ve sonraki sahne aniden başlar. BU İSTENMİYOR.
-    - Sakin ve EKSİKSİZ biçimde yaklaşık 6-7 saniyede söylenebilecek bir cümle yaz; klibin sonunda yaklaşık 1-1.5 saniyelik kısa bir sessizlik kalsın. 8 saniyenin tamamını konuşmayla DOLDURMA.
-    - Somut ölçü: konuşma dilinde yaklaşık 12-16 kelime, 1-2 kısa cümle. Tek sahne için ASLA 18 kelimeyi geçme.
+__SPEECH_BUDGET_RULE_TR__
     - Cümle basit ve kendi içinde tam olsun; tek bir uzun düşünceyi iki sahne arasına BÖLME. Her sahnenin cümlesi tek başına tamamlanmış bir cümle (veya iki) olmalı.
     - Mesajı sahnelere yay: her sahne TEK küçük bir fikir söylesin. Her şeyi tek sahnede anlatmaya çalışma.
 
@@ -181,7 +179,7 @@ IMAGE_TO_VIDEO_PROMPT İÇİN KURALLAR (HER SAHNE):
 
   - Birinci sahnenin image_to_video_prompt’unda, karakter videoya HER ZAMAN önce kendini adıyla TANITARAK başlamalı, hemen ardından kısa ve dikkat çekici bir HOOK cümlesi gelmeli.
   - Tanıtım, karakterin character_details içinde verilen KENDİ adını kullanmalı (örneğin kısa bir selamlama + adı, şu şekilde: Selam, ben <isim>). character_details'te verilen ismi aynen kullan; farklı bir isim UYDURMA. character_details'te isim yoksa, isimsiz kısa ve doğal bir selamlama kullan.
-  - Açılış cümlesini (selamlama + isim + hook) birebir, tırnaksız düz kelimelerle yaz (SES VE KONUŞMA kurallarındaki gibi). Bu açılışın tamamı sahne 1'in konuşma cümlesidir ve konuşma uzunluğu bütçesine UYMALI: selamlama + isim + hook birlikte sakin biçimde yaklaşık 6-7 saniyede eksiksiz söylenebilmeli (yaklaşık 12-16 kelime, asla 18'i geçme), klip kesilmeden bitmeli. Selamlamayı çok kısa tut ki hook da sığsın. Sahne 1'e hook'tan sonra fazladan uzun bir cümle EKLEME; sahne 1'i kısa ve vurucu tut.
+  - Açılış cümlesini (selamlama + isim + hook) birebir, tırnaksız düz kelimelerle yaz (SES VE KONUŞMA kurallarındaki gibi). Bu açılışın tamamı sahne 1'in konuşma cümlesidir ve konuşma uzunluğu bütçesine UYMALI: __HOOK_BUDGET_RULE_TR__ Selamlamayı çok kısa tut ki hook da sığsın. Sahne 1'e hook'tan sonra fazladan uzun bir cümle EKLEME; sahne 1'i kısa ve vurucu tut.
   - Bu hook, Reels / TikTok tarzı bir içerikte izleyicinin scroll’u durduracak kadar net ve merak uyandırıcı olmalı.
 
 VIDEO_CAPTION KURALLARI:

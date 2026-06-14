@@ -193,33 +193,33 @@ class KieAIService:
         self,
         prompt: str,
         image_url: str,
+        duration: str = "5",
+        mode: str = "pro",
+        sound: bool = False,
     ) -> str:
         """
-        Kling 3.0 ile sessiz (native sound kapalı) baz video üretir.
+        Kling 3.0 ile image-to-video baz video üretir (taskId döner).
+
+        Lip-sync pipeline'ında ses kapalı (sound=False) — dış Türkçe sesi ElevenLabs ekler.
+        Model slug'ı ve input şeması: _skills/kie-ai-video-production/models/kling-3.md
+        Endpoint: /jobs/createTask. NOT: `image_urls` (image_input değil), `duration` STRING,
+        `mode`/`multi_shots` zorunlu, `aspect_ratio` sadece image_urls YOKKEN gerekir.
         """
-        if not is_native_kie_url(image_url):
+        if not _is_kie_native_url(image_url):
             log.info(f"Kling için görsel Kie AI'a yükleniyor: {image_url[:60]}...")
             image_url = self.upload_file_from_url(image_url)
 
         input_data = {
             "prompt": prompt,
-            "image_input": [image_url],
-            "aspect_ratio": "9:16",
-            "sound": False # Sesi biz ElevenLabs+Replicate ile ekleyeceğiz
+            "image_urls": [image_url],
+            "duration": str(duration),
+            "mode": mode,
+            "multi_shots": False,
+            "sound": sound,
         }
-
-        # Kling modeli Kie AI'da genelde 'kling' veya 'kling-v1.5' gibi adlandırılır. 
-        # Eğer 'kling-3.0/video' çalışmadıysa, 'kling' deneyelim.
-        payload = {"model": "kling", "input": input_data}
-        try:
-            task_id = self._create_task(payload)
-        except Exception as e:
-            # Fallback model denemesi
-            log.warning(f"Kling model adı ile görev oluşturulamadı, alternatif deneniyor: {e}")
-            payload["model"] = "kling-3.0/video"
-            task_id = self._create_task(payload)
-            
-        log.info(f"Kling video görevi oluşturuldu: {task_id}")
+        payload = {"model": "kling-3.0/video", "input": input_data}
+        task_id = self._create_task(payload)
+        log.info(f"Kling video görevi oluşturuldu: {task_id} (duration={duration}s, mode={mode})")
         return task_id
 
     def create_veo_video(

@@ -11,8 +11,11 @@ openai==1.68.2
 requests==2.32.3
 urllib3==2.2.1
 
-# Replicate (Sahne birleştirme — concat)
+# Replicate (concat + kling motorunda lip-sync / ses bindirme)
 replicate==1.0.4
+
+# ElevenLabs çağrıları için async HTTP (services/elevenlabs_service.py)
+aiohttp==3.9.5
 
 # .env yükleme (lokal geliştirme)
 python-dotenv==1.0.1

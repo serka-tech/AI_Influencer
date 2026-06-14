@@ -12,6 +12,7 @@ içeren JSON üretir. JSON parse + sahne sayısı doğrulaması + auto-fix retry
 
 import json
 import os
+import re
 
 from logger import get_logger
 from services.openai_service import OpenAIService
@@ -64,6 +65,8 @@ class ScenarioEngine:
         feedback: str | None = None,
         previous: dict | None = None,
         place_assignments: list[str] | None = None,
+        optimize_consistency: bool = False,
+        scene_lines: list[str] | None = None,
     ) -> dict:
         """
         Senaryo üretir.
@@ -78,9 +81,44 @@ class ScenarioEngine:
         Raises:
             ScenarioError: max_attempts sonunda geçerli senaryo üretilemezse.
         """
+        # Kendi metin (script) modu: konuşma cümleleri kullanıcıdan birebir gelir;
+        # sahne sayısı bu cümle listesine eşitlenir.
+        if scene_lines:
+            scene_count = len(scene_lines)
+
         user_prompt = self._build_user_prompt(
             character_details, video_topic, scene_count, speech_language
         )
+
+        # Dinamik Kurallar
+        if optimize_consistency:
+            mov_en = "CRITICAL: Keep the character's body and head movements MINIMAL and SUBTLE (e.g., micro-expressions, gentle blinking, very small head tilts). Do NOT describe large, sudden, or complex movements (like walking, jumping, turning around, waving arms). Large movements cause the AI video engine to morph the face and lose character consistency."
+            mov_tr = "KRİTİK: Karakterin vücut ve baş hareketlerini MİNİMAL ve HAFİF tut (örn. mikro mimikler, hafif göz kırpma, çok küçük baş eğme). Büyük, ani veya karmaşık hareketler (yürüme, zıplama, arkasını dönme, el sallama, elleri çok fazla oynatma) KESİNLİKLE TARİF ETME. Büyük hareketler AI'ın yüzü bozmasına ve karakter tutarlılığını kaybetmesine neden olur."
+            sp_en = "    - Each clip is only about 5-8 seconds long. If the spoken line is too long it gets cut off mid-sentence and the next scene starts abruptly. This is NOT allowed.\n    - Write a spoken line that can be said CALMLY and COMPLETELY in about 4 to 5 seconds, leaving a silent beat before the clip ends. Never fill the whole clip with talking.\n    - As a concrete guide, this is roughly 6 to 12 words in the SPEECH LANGUAGE, about 1 short sentence. NEVER write more than 14 words for a single scene."
+            sp_tr = "    - Her klip yalnızca yaklaşık 5-8 saniye ve Veo sonunda sert keser. Konuşma cümlesi çok uzun olursa cümle ortasından kesilir ve sonraki sahne aniden başlar. BU İSTENMİYOR.\n    - Sakin ve EKSİKSİZ biçimde yaklaşık 4-5 saniyede söylenebilecek bir cümle yaz; klibin sonunda kısa bir sessizlik kalsın. Klibin tamamını konuşmayla DOLDURMA.\n    - Somut ölçü: konuşma dilinde yaklaşık 6-12 kelime, 1 kısa cümle. Tek sahne için ASLA 14 kelimeyi geçme."
+            hook_en = "greeting + name + hook together have to be sayable calmly and completely within about 4 to 5 seconds (roughly 6 to 12 words, never more than 14)."
+            hook_tr = "selamlama + isim + hook birlikte sakin biçimde yaklaşık 4-5 saniyede eksiksiz söylenebilmeli (yaklaşık 6-12 kelime, asla 14'ü geçme), klip kesilmeden bitmeli."
+        else:
+            mov_en = "(natural micro head movements, eye contact with the front camera, small shifts in posture, discreet hand gestures that stay mostly out of frame)."
+            mov_tr = "(hafif jestler, baş hareketleri, etrafa bakması, küçük bir nesneyi kadrajın kenarında göstermesi vb.) gerçekçi ve kısa olmalı."
+            sp_en = "    - Each clip is only about 8 seconds long, and Veo cuts hard at the end. If the spoken line is too long it gets cut off mid-sentence and the next scene starts abruptly. This is NOT allowed.\n    - Write a spoken line that can be said CALMLY and COMPLETELY in about 6 to 7 seconds, leaving a short silent beat (about 1 to 1.5 seconds) before the clip ends. Never fill the whole 8 seconds with talking.\n    - As a concrete guide, this is roughly 12 to 16 words in the SPEECH LANGUAGE, about 1 to 2 short sentences. NEVER write more than 18 words for a single scene."
+            sp_tr = "    - Her klip yalnızca yaklaşık 8 saniye ve Veo sonunda sert keser. Konuşma cümlesi çok uzun olursa cümle ortasından kesilir ve sonraki sahne aniden başlar. BU İSTENMİYOR.\n    - Sakin ve EKSİKSİZ biçimde yaklaşık 6-7 saniyede söylenebilecek bir cümle yaz; klibin sonunda yaklaşık 1-1.5 saniyelik kısa bir sessizlik kalsın. 8 saniyenin tamamını konuşmayla DOLDURMA.\n    - Somut ölçü: konuşma dilinde yaklaşık 12-16 kelime, 1-2 kısa cümle. Tek sahne için ASLA 18 kelimeyi geçme."
+            hook_en = "greeting + name + hook together have to be sayable calmly and completely within about 6 to 7 seconds (roughly 12 to 16 words, never more than 18)."
+            hook_tr = "selamlama + isim + hook birlikte sakin biçimde yaklaşık 6-7 saniyede eksiksiz söylenebilmeli (yaklaşık 12-16 kelime, asla 18'i geçme), klip kesilmeden bitmeli."
+
+        final_system = (
+            self.system_prompt
+            .replace("__MOVEMENT_RULE__", mov_en)
+            .replace("__SPEECH_BUDGET_RULE__", sp_en)
+            .replace("__HOOK_BUDGET_RULE__", hook_en)
+        )
+        user_prompt = (
+            user_prompt
+            .replace("__MOVEMENT_RULE_TR__", mov_tr)
+            .replace("__SPEECH_BUDGET_RULE_TR__", sp_tr)
+            .replace("__HOOK_BUDGET_RULE_TR__", hook_tr)
+        )
+
         # Keşif modu: her sahne sırayla belirli bir gerçek mekana ayrılır
         if place_assignments:
             lines = "\n".join(
@@ -96,8 +134,25 @@ class ScenarioEngine:
                 "tipik atmosferine uygun tarif et. Son sahnede kısa bir kapanış/çağrı yap."
             )
 
+        # Kendi metin (script) modu: her sahnenin konuşması kullanıcının yazdığı cümledir.
+        # Modelin bu cümleleri AYNEN kullanması, sadece görsel/ortam üretmesi gerekir.
+        if scene_lines:
+            lines = "\n".join(
+                f"- Sahne {i}: {line.strip()}" for i, line in enumerate(scene_lines, 1)
+            )
+            user_prompt += (
+                "\n\nÖNEMLİ — BİREBİR KONUŞMA METNİ (kullanıcının kendi metni):\n"
+                "Bu videonun konuşması kullanıcı tarafından yazılmıştır. Her sahnede karakterin "
+                "söyleyeceği cümle AŞAĞIDA SIRAYLA verilmiştir. Bu cümleleri KELİMESİ KELİMESİNE, "
+                "AYNEN kullan; sözcükleri DEĞİŞTİRME, KISALTMA, EKLEME veya yeniden yazma. "
+                "Her image_to_video_prompt içinde ilgili sahnenin konuşmasını SES VE KONUŞMA "
+                "kurallarındaki gibi 'word for word: <cümle>' kalıbıyla, verilen cümleyle birebir "
+                "aynı yaz. Görsel, ortam, kadraj ve aksiyonu sen üret; ama söylenen sözler bunlar olsun:\n"
+                f"{lines}"
+            )
+
         messages = [
-            {"role": "system", "content": self.system_prompt},
+            {"role": "system", "content": final_system},
             {"role": "user", "content": user_prompt},
         ]
 
@@ -145,6 +200,38 @@ class ScenarioEngine:
                 log.error(f"Senaryo üretim hatası (deneme {attempt}/{max_attempts}): {e}", exc_info=True)
 
         raise ScenarioError(f"Senaryo {max_attempts} denemede üretilemedi: {last_error}")
+
+    def recommend_scene_count(
+        self, video_topic: str, speech_language: str, min_scenes: int, max_scenes: int
+    ) -> int:
+        """
+        Konunun zenginliğine göre ideal sahne sayısını LLM ile önerir (min..max arası).
+        Hata olursa makul bir orta değere düşer.
+        """
+        default = max(min_scenes, min(max_scenes, (min_scenes + max_scenes) // 2))
+        prompt = (
+            "Bir kısa sosyal medya videosu (Reels/TikTok/Shorts) için sahne sayısı belirleyeceğiz. "
+            f"Her sahne ~8 saniyelik tek bir konuşma anıdır. Aşağıdaki konuyu akıcı, doğal bir "
+            f"videoya dönüştürmek için ideal sahne sayısını {min_scenes} ile {max_scenes} arasında seç. "
+            "Basit/tek mesajlı konular için az, çok adımlı/zengin konular için fazla sahne uygundur. "
+            "SADECE bir tam sayı yaz, başka hiçbir şey yazma.\n\n"
+            f"Konu:\n{video_topic}\n\n"
+            f"Video dili: {speech_language}"
+        )
+        try:
+            raw = self.openai.chat(
+                [{"role": "user", "content": prompt}], max_tokens=10
+            ).strip()
+            m = re.search(r"\d+", raw)
+            if not m:
+                return default
+            n = int(m.group())
+            n = max(min_scenes, min(max_scenes, n))
+            log.info(f"Önerilen sahne sayısı: {n} (konu: {video_topic[:50]})")
+            return n
+        except Exception:
+            log.warning("Sahne sayısı önerilemedi, varsayılan kullanılacak", exc_info=True)
+            return default
 
     def summarize_tr(self, scenario: dict) -> list[dict]:
         """
@@ -229,6 +316,13 @@ class ScenarioEngine:
                 raise ScenarioError(f"Sahne {i}: image_to_video_prompt boş")
             if not isinstance(vot, str) or not vot.strip():
                 raise ScenarioError(f"Sahne {i}: voiceover_text boş")
+            # Kelime sayısı kontrolü — çok uzun cümleler Veo'da kesilir
+            word_count = len(vot.split())
+            if word_count > 18:
+                raise ScenarioError(
+                    f"Sahne {i}: voiceover_text çok uzun ({word_count} kelime, max 18). "
+                    f"Cümle 8 saniyeye sığmayacak ve ortasından kesilecek. Daha kısa yaz."
+                )
 
         caption = result.get("video_caption")
         if not isinstance(caption, str) or not caption.strip():

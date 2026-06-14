@@ -96,7 +96,7 @@ IMAGE_TO_VIDEO_PROMPT PER SCENE (image-to-video, with audio + speech):
 - Duration: each scene is approximately 8 seconds long.
 - Focus on:
   - How the camera moves during those ~8 seconds (slight handheld shake, subtle push-in or pull-back, tiny repositioning as they adjust their arm).
-  - How the influencer moves (natural micro head movements, eye contact with the front camera, small shifts in posture, discreet hand gestures that stay mostly out of frame).
+  - How the influencer moves: __MOVEMENT_RULE__
   - Small environmental motion (wind, water, dust, light changes, etc. when appropriate).
 
 - AUDIO & DIALOGUE:
@@ -105,9 +105,7 @@ IMAGE_TO_VIDEO_PROMPT PER SCENE (image-to-video, with audio + speech):
   - In each scene’s "image_to_video_prompt", explicitly mention this same tone of voice, for example: in the same very shy, soft, slightly breathy [speech_language] young woman voice, she ...
 
   - SPEECH LENGTH BUDGET (CRITICAL — the line MUST finish inside the clip):
-    - Each clip is only about 8 seconds long, and Veo cuts hard at the end. If the spoken line is too long it gets cut off mid-sentence and the next scene starts abruptly. This is NOT allowed.
-    - Write a spoken line that can be said CALMLY and COMPLETELY in about 6 to 7 seconds, leaving a short silent beat (about 1 to 1.5 seconds) before the clip ends. Never fill the whole 8 seconds with talking.
-    - As a concrete guide, this is roughly 12 to 16 words in the SPEECH LANGUAGE, about 1 to 2 short sentences. NEVER write more than 18 words for a single scene.
+__SPEECH_BUDGET_RULE__
     - Keep the sentence simple and self-contained; do NOT split one long thought across the cut between two scenes. Each scene's line must be a complete sentence (or two) on its own.
     - Spread the message across the scenes: each scene says ONE small idea. Do not try to say everything in one scene.
 
@@ -129,7 +127,7 @@ IMAGE_TO_VIDEO_PROMPT PER SCENE (image-to-video, with audio + speech):
 - FIRST SCENE HOOK RULE:
   - In the "voiceover_text" of the FIRST scene, the character must ALWAYS open the video by introducing herself by name, immediately followed by a short, attention-grabbing hook line.
   - The intro must use the character's OWN name taken from character_details (for example a short greeting plus her name, like: Selam, ben <name>). Use the exact name given in character_details; do NOT invent a different name. If character_details does not state a name, just use a short natural greeting without a name.
-  - Write this exact opening line (greeting + name + hook) into the "voiceover_text" of scene 1. This whole opening MUST respect the speech length budget: greeting + name + hook together have to be sayable calmly and completely within about 6 to 7 seconds (roughly 12 to 16 words, never more than 18). Keep the greeting very short so the hook still fits. Do NOT add an extra long sentence after the hook in scene 1 — keep scene 1 short and punchy.
+  - Write this exact opening line (greeting + name + hook) into the "voiceover_text" of scene 1. This whole opening MUST respect the speech length budget: __HOOK_BUDGET_RULE__ Keep the greeting very short so the hook still fits. Do NOT add an extra long sentence after the hook in scene 1 — keep scene 1 short and punchy.
 
 VIDEO_CAPTION:
 - Output: ONE single-line caption in the given SPEECH LANGUAGE.

@@ -1,6 +1,10 @@
 # Nixpacks Build Configuration for Railway
-# Bu proje video birleştirmeyi Replicate (cloud) üzerinde yapar — lokal ffmpeg gerekmez.
+# Bu proje video birleştirmeyi Replicate (cloud) üzerinde yapar; lokal ffmpeg gerekmez.
 # Worker olarak çalışır (Telegram long polling).
+# Python 3.11 pinli: replicate_service.py asyncio.timeout() kullanır (3.11+ gerekir).
+
+[phases.setup]
+nixPkgs = ["python311"]
 
 [start]
 cmd = "python main.py"

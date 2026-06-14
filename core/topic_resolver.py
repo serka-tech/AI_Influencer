@@ -38,6 +38,50 @@ def is_url(text: str) -> bool:
     return bool(_URL_RE.match(text.strip()))
 
 
+# Cümle sonu: . ! ? … veya satır sonu. Kısaltmaları bölmemek için en az 2 harf ister.
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+|\n+")
+
+
+def segment_script(text: str, max_words: int, max_scenes: int) -> list[str]:
+    """
+    Kullanıcının kendi yazdığı metni sahnelere böler (BİREBİR seslendirme için).
+
+    Metni cümlelere ayırır, ardından her sahne yaklaşık `max_words` kelimeyi geçmeyecek
+    şekilde komşu cümleleri greedy birleştirir. Toplam sahne `max_scenes`'i aşarsa,
+    fazla parçalar son sahnelere geri eklenerek `max_scenes`'e indirilir.
+
+    Returns:
+        Sahne sırasına göre birebir konuşma cümlelerinin listesi (her eleman = bir sahne).
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return []
+
+    sentences = [s.strip() for s in _SENTENCE_SPLIT_RE.split(raw) if s.strip()]
+    if not sentences:
+        sentences = [raw]
+
+    # 1) Greedy: cümleleri kelime bütçesine göre kovalara doldur.
+    buckets: list[str] = []
+    current = ""
+    for sent in sentences:
+        candidate = f"{current} {sent}".strip() if current else sent
+        if current and len(candidate.split()) > max_words:
+            buckets.append(current)
+            current = sent
+        else:
+            current = candidate
+    if current:
+        buckets.append(current)
+
+    # 2) max_scenes'i aşarsa, sondan başlayarak fazla kovaları öncekine birleştir.
+    while len(buckets) > max_scenes:
+        last = buckets.pop()
+        buckets[-1] = f"{buckets[-1]} {last}".strip()
+
+    return buckets
+
+
 def is_negative(text: str) -> bool:
     return text.strip().lower() in _NEGATIVE or not text.strip()
 

@@ -60,12 +60,33 @@ class Config:
         # n8n'de senaryo için gpt-5.1 kullanılıyordu.
         self.OPENAI_SCENARIO_MODEL = os.environ.get("OPENAI_SCENARIO_MODEL", "gpt-5.1")
 
-        # ── Kie AI (Nano Banana Pro + Veo 3.1) ──
+        # ── Kie AI (Nano Banana Pro görsel + Veo 3.1 / Kling 3.0 video) ──
         self.KIE_API_KEY = self._require_env("KIE_API_KEY")
         self.KIE_BASE_URL = os.environ.get("KIE_BASE_URL", "https://api.kie.ai/api/v1/")
 
-        # ── Replicate (Sahne birleştirme — concat) ──
+        # ── Video Motoru (veo | kling) ──
+        # veo   : Veo 3.1 image-to-video, kendi sesiyle (tek servis, stabil) — varsayılan.
+        # kling : Kling 3.0 sessiz video + ElevenLabs Türkçe ses + Replicate lip-sync.
+        self.VIDEO_ENGINE = os.environ.get("VIDEO_ENGINE", "veo").strip().lower()
+        if self.VIDEO_ENGINE not in ("veo", "kling"):
+            raise EnvironmentError(
+                f"CRITICAL STARTUP FAILURE: VIDEO_ENGINE '{self.VIDEO_ENGINE}' geçersiz. "
+                "'veo' veya 'kling' olmalı."
+            )
+
+        # ── Replicate (concat + kling motorunda lip-sync) ──
         self.REPLICATE_API_TOKEN = self._require_env("REPLICATE_API_TOKEN")
+
+        # ── ElevenLabs (sadece kling motorunda zorunlu — dış Türkçe seslendirme) ──
+        self.ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+        self.ELEVENLABS_VOICE_ID = os.environ.get(
+            "ELEVENLABS_VOICE_ID", "CwhRBWXzGAHq8TQ4Fs17"
+        ).strip()
+        if self.VIDEO_ENGINE == "kling" and not self.ELEVENLABS_API_KEY:
+            raise EnvironmentError(
+                "CRITICAL STARTUP FAILURE: VIDEO_ENGINE=kling için ELEVENLABS_API_KEY zorunlu. "
+                ".env'e ekleyin ya da VIDEO_ENGINE=veo kullanın."
+            )
 
         # ── ImgBB (opsiyonel — lokal görseli public URL'e çevirmek için) ──
         self.IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
@@ -86,7 +107,15 @@ class Config:
         self.ASPECT_RATIO = os.environ.get("ASPECT_RATIO", "9:16")
         self.IMAGE_RESOLUTION = os.environ.get("IMAGE_RESOLUTION", "1K")
         self.MIN_SCENES = int(os.environ.get("MIN_SCENES", "2"))
-        self.MAX_SCENES = int(os.environ.get("MAX_SCENES", "6"))
+        self.MAX_SCENES = int(os.environ.get("MAX_SCENES", "4"))
+        # Girdi bu kelime sayısına ulaşırsa "kendi metin" (script) modu sayılır:
+        # metin birebir sahnelere bölünüp aynen seslendirilir.
+        self.SCRIPT_MODE_MIN_WORDS = int(os.environ.get("SCRIPT_MODE_MIN_WORDS", "25"))
+        self.OPTIMIZE_PROMPT_CONSISTENCY = os.environ.get("OPTIMIZE_PROMPT_CONSISTENCY", "true").lower() == "true"
+        self.DEFAULT_BGM_URL = os.environ.get(
+            "DEFAULT_BGM_URL", 
+            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        )
 
         # ── Upload-Post (opsiyonel — sosyal medya yayını) ──
         self.UPLOAD_POST_API_KEY = os.environ.get("UPLOAD_POST_API_KEY", "")
